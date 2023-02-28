@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="a0cf5603-dbfc-4435-80fb-a385e4e3a550" >
+		<http:request-connection host="trans-firstcoach-papi.us-e2.cloudhub.io" />
+	</http:request-config>
+	<flow name="getRoutesFlow" doc:id="312f1d72-b8e8-4f86-9eda-7f6f4fcde23e" >
+		<http:request method="GET" doc:name="Request" doc:id="a3437da9-6fa2-457e-81bd-f4402b2b142c" config-ref="HTTP_Request_configuration" path="/api/booking/transportType/routes"/>
+		<choice doc:name="Choice" doc:id="19c7f69d-9121-4023-ae40-4bcb7572a61d" >
+			<when expression="#[vars.transportCompany !=null]">
+				<ee:transform doc:name="Transform Message" doc:id="5c36ead2-9b8a-4f39-86bb-d60406e9a080" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload , indexOfPayload ) -> {
+	companyCode:  vars.transportCompany,
+	destinationLocation: {
+		locationCode: payload.destinationLocation.locationCode
+	},
+	originLocation: {
+		locationCode: payload.originLocation.locationCode
+	}
+} ]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="27679761-4321-4649-b82d-f34b9839b9b4">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="3fb00ed8-8ea6-41e4-8253-3b31d31c26a8" message="#[payload]"/>
+	</flow>
+	<flow name="getSchedulesFlow" doc:id="ce02c32b-c57a-4339-a6bc-9fe9e61549e7" >
+		<http:request method="GET" doc:name="Request" doc:id="654d7b7d-acb6-49df-8a4d-6defbd26abda" config-ref="HTTP_Request_configuration" path="/api/booking/transportType/schedules"/>
+		<ee:transform doc:name="Transform Message" doc:id="b6cb7bfc-aabf-445b-a450-2fe328392070" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e946deda-ccc5-4246-9dc5-9b24dce564af" message="#[payload]"/>
+	</flow>
+</mule>
